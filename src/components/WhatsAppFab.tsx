@@ -6,7 +6,9 @@ import { settingsApi } from "@/lib/api";
 
 export function WhatsAppFab() {
   const insets = useSafeAreaInsets();
-  const [whatsappNum, setWhatsappNum] = useState("8801724104606");
+  const [whatsappNum, setWhatsappNum] = useState(
+    process.env.EXPO_PUBLIC_FALLBACK_WHATSAPP?.replace(/\D/g, "") || "8801724104606"
+  );
 
   useEffect(() => {
     settingsApi.get()

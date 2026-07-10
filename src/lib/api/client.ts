@@ -4,7 +4,7 @@ import Constants from "expo-constants";
 
 const hostUri = Constants.expoConfig?.hostUri;
 const host = hostUri ? hostUri.split(":")[0] : "localhost";
-const BASE_URL = `http://${host}:5000/api/v1`;
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL || `http://${host}:5000/api/v1`;
 
 type Method = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
