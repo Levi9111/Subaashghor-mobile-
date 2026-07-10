@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, StyleSheet, Dimensions, Text, StatusBar } from "react-native";
+import { View, StyleSheet, Dimensions, Text, StatusBar, Image } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -144,8 +144,11 @@ export function WelcomeSplash() {
 
           {/* Logo inner circle */}
           <View style={styles.logoCircle}>
-            {/* Fallback to text logo/icon representation, styled beautifully */}
-            <Text style={styles.logoChar}>স</Text>
+            <Image
+              source={require("@/assets/images/logo.png")}
+              style={{ width: 84, height: 84 }}
+              resizeMode="contain"
+            />
           </View>
         </View>
 

@@ -145,6 +145,11 @@ export default function HomeScreen() {
         
         {/* Luxury Header Banner */}
         <View style={[styles.header, { borderColor: colors.border }]}>
+          <Image
+            source={require("@/assets/images/logo.png")}
+            style={{ width: 54, height: 54, marginBottom: 6 }}
+            resizeMode="contain"
+          />
           <Text style={[styles.logoText, { color: colors.primary }]}>সুবাসঘর</Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
             A HOUSE OF PURE OUTSTANDING FRAGRANCES
