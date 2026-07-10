@@ -213,7 +213,7 @@ export default function ScentFinderScreen() {
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.scrollContent}>
-      <header style={styles.header}>
+      <View style={styles.header}>
         <Text style={[styles.titleLabel, { color: colors.primary }]}>{t("সেন্ট ফাইন্ডার", "SCENT FINDER")}</Text>
         <Text style={[styles.title, { color: colors.text }]}>
           {t("আপনার সিগনেচার সুবাস", "Your Signature Scent")}
@@ -221,7 +221,7 @@ export default function ScentFinderScreen() {
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
           {t("৪টি প্রশ্ন। ৬০ সেকেন্ড।", "4 questions. 60 seconds.")}
         </Text>
-      </header>
+      </View>
 
       {!done ? (
         // Quiz Card
