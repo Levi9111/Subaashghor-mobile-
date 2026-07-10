@@ -331,7 +331,7 @@ const styles = StyleSheet.create({
   input: {
     height: 44,
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 12,
     paddingHorizontal: 14,
     fontSize: 13,
     marginBottom: 12,
@@ -341,7 +341,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 14,
     marginBottom: 10,
   },

@@ -7,21 +7,41 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
-  useColorScheme,
-  FlatList,
   Modal,
+  Image,
+  Dimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth, Address } from "@/lib/auth";
 import { useLang } from "@/lib/i18n";
 import { Colors } from "@/constants/theme";
-import { ordersApi, Order } from "@/lib/api";
-import { LogOut, MapPin, Package, Settings, Plus, Trash2, Check, Globe } from "lucide-react-native";
+import { ordersApi, Order, productsApi, Product } from "@/lib/api";
+import { useWishlist } from "@/lib/wishlist";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import {
+  LogOut,
+  MapPin,
+  Package,
+  Plus,
+  Trash2,
+  Check,
+  Globe,
+  User,
+  Heart,
+  ShoppingBag,
+  Star,
+  ChevronRight,
+} from "lucide-react-native";
+import { useRouter } from "expo-router";
+
+const { width } = Dimensions.get("window");
 
 export default function AccountScreen() {
+  const router = useRouter();
   const { t, lang, toggle: toggleLang } = useLang();
   const scheme = useColorScheme();
   const colors = Colors[scheme === "dark" ? "dark" : "light"];
+  const wishlist = useWishlist();
 
   const {
     user,
@@ -30,23 +50,38 @@ export default function AccountScreen() {
     login,
     register,
     logout,
+    updateProfile,
     upsertAddress,
     removeAddress,
     setDefaultAddress,
   } = useAuth();
 
-  // Screen Tabs/States
-  const [authTab, setAuthTab] = useState<"login" | "signup">("login");
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [ordersLoading, setOrdersLoading] = useState(false);
+  // Screen Sub-Tabs for Authenticated Dashboard
+  const [activeTab, setActiveTab] = useState<"profile" | "wishlist" | "addresses" | "orders">("profile");
 
-  // Form inputs
+  // Auth form inputs (Unauthenticated view)
+  const [authTab, setAuthTab] = useState<"login" | "signup">("login");
   const [name, setName] = useState("");
   const [emailOrPhone, setEmailOrPhone] = useState("");
   const [password, setPassword] = useState("");
   const [phone, setPhone] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Profile Edit fields (Authenticated view)
+  const [profileName, setProfileName] = useState("");
+  const [profileEmail, setProfileEmail] = useState("");
+  const [profilePhone, setProfilePhone] = useState("");
+  const [updatingProfile, setUpdatingProfile] = useState(false);
+  const [profileSuccessMsg, setProfileSuccessMsg] = useState("");
+
+  // Orders list
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+
+  // Products list (for resolving Wishlist info)
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [productsLoading, setProductsLoading] = useState(false);
 
   // Address modal inputs
   const [showAddressModal, setShowAddressModal] = useState(false);
@@ -59,6 +94,16 @@ export default function AccountScreen() {
   const [addrDistrict, setAddrDistrict] = useState("");
   const [addrDefault, setAddrDefault] = useState(false);
 
+  // Populate form fields with user data on load/change
+  useEffect(() => {
+    if (user) {
+      setProfileName(user.name || "");
+      setProfileEmail(user.email || "");
+      setProfilePhone(user.phone || "");
+    }
+  }, [user]);
+
+  // Load orders & products on authentication
   useEffect(() => {
     if (isAuthenticated) {
       const fetchOrders = async () => {
@@ -67,12 +112,26 @@ export default function AccountScreen() {
           const list = await ordersApi.mine();
           setOrders(list);
         } catch (err) {
-          console.error(err);
+          console.error("Failed to load orders:", err);
         } finally {
           setOrdersLoading(false);
         }
       };
+
+      const loadProducts = async () => {
+        setProductsLoading(true);
+        try {
+          const res = await productsApi.list({ limit: 100 });
+          setAllProducts(res.items);
+        } catch (err) {
+          console.error("Failed to load products for wishlist:", err);
+        } finally {
+          setProductsLoading(false);
+        }
+      };
+
       fetchOrders();
+      loadProducts();
     }
   }, [isAuthenticated]);
 
@@ -113,6 +172,29 @@ export default function AccountScreen() {
     }
   };
 
+  const handleUpdateProfile = async () => {
+    setProfileSuccessMsg("");
+    setErrorMsg("");
+    if (!profileName.trim()) {
+      setErrorMsg(t("নাম খালি হতে পারে না", "Name cannot be empty"));
+      return;
+    }
+    setUpdatingProfile(true);
+    try {
+      await updateProfile({
+        name: profileName.trim(),
+        email: profileEmail.trim(),
+        phone: profilePhone.trim(),
+      });
+      setProfileSuccessMsg(t("প্রোফাইল সফলভাবে আপডেট করা হয়েছে", "Profile updated successfully"));
+      setTimeout(() => setProfileSuccessMsg(""), 3000);
+    } catch (err: any) {
+      setErrorMsg(err.message || t("আপডেট ব্যর্থ হয়েছে।", "Update failed."));
+    } finally {
+      setUpdatingProfile(false);
+    }
+  };
+
   const handleAddAddress = () => {
     if (!addrName.trim() || !addrPhone.trim() || !addrStreet.trim() || !addrCity.trim() || !addrDistrict.trim()) {
       return;
@@ -149,6 +231,9 @@ export default function AccountScreen() {
     );
   }
 
+  // Filter products in wishlist
+  const wishlistProducts = allProducts.filter((p) => wishlist.has(p.slug));
+
   // ----- UNAUTHENTICATED VIEW -----
   if (!isAuthenticated) {
     return (
@@ -156,7 +241,9 @@ export default function AccountScreen() {
         <ScrollView contentContainerStyle={styles.authScroll}>
           {/* Brand header */}
           <View style={styles.authHeader}>
-            <Text style={[styles.logoText, { color: colors.primary }]}>সুবাসঘর</Text>
+            <Text style={[styles.logoText, { color: colors.primary }]}>
+              {t("সুবাসঘর", "Subaashghor")}
+            </Text>
             <Text style={[styles.logoSub, { color: colors.textSecondary }]}>
               {t("একটি বিশুদ্ধ সুবাসের ঐতিহ্য", "A Legacy of Pure Fragrance")}
             </Text>
@@ -251,6 +338,11 @@ export default function AccountScreen() {
         
         {/* User Hero Banner */}
         <View style={[styles.profileHeader, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={[styles.avatarCircle, { backgroundColor: colors.primary + "20", borderColor: colors.primary }]}>
+            <Text style={[styles.avatarText, { color: colors.primary }]}>
+              {(user?.name || "C").charAt(0).toUpperCase()}
+            </Text>
+          </View>
           <Text style={[styles.profileName, { color: colors.text }]}>{user?.name || "Customer"}</Text>
           <Text style={[styles.profileEmail, { color: colors.textSecondary }]}>{user?.email || user?.phone}</Text>
 
@@ -276,110 +368,279 @@ export default function AccountScreen() {
           </View>
         </View>
 
-        {/* Address Book Settings */}
-        <View style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={styles.sectionHeaderRow}>
-            <View style={styles.sectionTitleGroup}>
-              <MapPin size={18} color={colors.primary} />
+        {/* Dashboard Tabs Selector */}
+        <View style={[styles.dashboardTabs, { borderColor: colors.border, backgroundColor: colors.card }]}>
+          <TouchableOpacity
+            onPress={() => setActiveTab("profile")}
+            style={[styles.dashboardTabButton, activeTab === "profile" && { borderBottomColor: colors.primary }]}
+          >
+            <User size={18} color={activeTab === "profile" ? colors.primary : colors.muted} />
+            <Text style={[styles.dashboardTabText, { color: activeTab === "profile" ? colors.text : colors.muted }]}>
+              {t("প্রোফাইল", "Profile")}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => setActiveTab("wishlist")}
+            style={[styles.dashboardTabButton, activeTab === "wishlist" && { borderBottomColor: colors.primary }]}
+          >
+            <Heart size={18} color={activeTab === "wishlist" ? colors.primary : colors.muted} />
+            <Text style={[styles.dashboardTabText, { color: activeTab === "wishlist" ? colors.text : colors.muted }]}>
+              {t("পছন্দ তালিকা", "Wishlist")}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => setActiveTab("addresses")}
+            style={[styles.dashboardTabButton, activeTab === "addresses" && { borderBottomColor: colors.primary }]}
+          >
+            <MapPin size={18} color={activeTab === "addresses" ? colors.primary : colors.muted} />
+            <Text style={[styles.dashboardTabText, { color: activeTab === "addresses" ? colors.text : colors.muted }]}>
+              {t("ঠিকানা", "Addresses")}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => setActiveTab("orders")}
+            style={[styles.dashboardTabButton, activeTab === "orders" && { borderBottomColor: colors.primary }]}
+          >
+            <Package size={18} color={activeTab === "orders" ? colors.primary : colors.muted} />
+            <Text style={[styles.dashboardTabText, { color: activeTab === "orders" ? colors.text : colors.muted }]}>
+              {t("অর্ডার", "Orders")}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Tab Content Rendering */}
+        
+        {/* 1. PROFILE EDIT TAB */}
+        {activeTab === "profile" && (
+          <View style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 16 }]}>
+              {t("প্রোফাইল তথ্য সম্পাদন", "Edit Profile Details")}
+            </Text>
+            
+            <View style={styles.formGroup}>
+              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>{t("সম্পূর্ণ নাম", "Full Name")}</Text>
+              <TextInput
+                value={profileName}
+                onChangeText={setProfileName}
+                style={[styles.dashboardInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
+              />
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>{t("ইমেইল ঠিকানা", "Email Address")}</Text>
+              <TextInput
+                value={profileEmail}
+                onChangeText={setProfileEmail}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                style={[styles.dashboardInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
+              />
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>{t("মোবাইল নম্বর", "Mobile Number")}</Text>
+              <TextInput
+                value={profilePhone}
+                onChangeText={setProfilePhone}
+                keyboardType="phone-pad"
+                style={[styles.dashboardInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
+              />
+            </View>
+
+            {errorMsg !== "" && <Text style={[styles.errorText, { marginBottom: 10 }]}>{errorMsg}</Text>}
+            {profileSuccessMsg !== "" && <Text style={styles.successText}>{profileSuccessMsg}</Text>}
+
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPress={handleUpdateProfile}
+              style={[styles.submitBtn, { backgroundColor: colors.primary }]}
+            >
+              {updatingProfile ? (
+                <ActivityIndicator color={scheme === "dark" ? "#1c0507" : "#e5ded4"} />
+              ) : (
+                <Text style={[styles.submitBtnText, { color: scheme === "dark" ? "#1c0507" : "#e5ded4" }]}>
+                  {t("পরিবর্তন সংরক্ষণ করুন", "Save Changes")}
+                </Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* 2. MY WISHLIST TAB */}
+        {activeTab === "wishlist" && (
+          <View style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 16 }]}>
+              {t("আমার পছন্দের সুগন্ধি সমূহ", "My Wishlist")}
+            </Text>
+
+            {productsLoading ? (
+              <ActivityIndicator size="small" color="#c9a84c" style={{ marginVertical: 20 }} />
+            ) : wishlistProducts.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <Heart size={48} color={colors.muted} style={{ marginBottom: 12 }} />
+                <Text style={[styles.emptySectionText, { color: colors.muted }]}>
+                  {t("আপনার পছন্দের তালিকায় কোনো পণ্য নেই।", "Your wishlist is currently empty.")}
+                </Text>
+                <TouchableOpacity
+                  onPress={() => router.push("/shop")}
+                  style={[styles.shopNowBtn, { backgroundColor: colors.primary }]}
+                >
+                  <Text style={[styles.shopNowBtnText, { color: scheme === "dark" ? "#1c0507" : "#e5ded4" }]}>
+                    {t("পণ্য দেখুন", "Browse Perfumes")}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              wishlistProducts.map((p) => {
+                const currentPrice = p.salePrice && p.salePrice < p.price ? p.salePrice : p.price;
+                return (
+                  <View key={p._id} style={[styles.wishlistCard, { borderColor: colors.border, backgroundColor: colors.background }]}>
+                    <Image source={{ uri: p.images[0] }} style={styles.wishlistImage} />
+                    <View style={styles.wishlistInfo}>
+                      <Text style={[styles.wishlistName, { color: colors.text }]} numberOfLines={1}>
+                        {lang === "bn" ? p.name.bn : p.name.en}
+                      </Text>
+                      <Text style={[styles.wishlistTagline, { color: colors.textSecondary }]} numberOfLines={1}>
+                        {lang === "bn" ? p.tagline.bn : p.tagline.en}
+                      </Text>
+                      
+                      <View style={styles.wishlistMeta}>
+                        <Text style={[styles.wishlistPrice, { color: colors.primary }]}>৳{currentPrice}</Text>
+                        {p.rating && (
+                          <View style={styles.wishlistRating}>
+                            <Star size={10} color="#c9a84c" fill="#c9a84c" />
+                            <Text style={[styles.wishlistRatingText, { color: colors.text }]}>{p.rating.toFixed(1)}</Text>
+                          </View>
+                        )}
+                      </View>
+                    </View>
+
+                    <View style={styles.wishlistActions}>
+                      <TouchableOpacity
+                        onPress={() => router.push(`/products/${p.slug}`)}
+                        style={[styles.wishlistIconBtn, { backgroundColor: colors.primary + "15" }]}
+                      >
+                        <ChevronRight size={16} color={colors.primary} />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => wishlist.toggle(p.slug)}
+                        style={[styles.wishlistIconBtn, { backgroundColor: "rgba(211, 47, 47, 0.08)" }]}
+                      >
+                        <Trash2 size={16} color="#d32f2f" />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                );
+              })
+            )}
+          </View>
+        )}
+
+        {/* 3. ADDRESSES TAB */}
+        {activeTab === "addresses" && (
+          <View style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={styles.sectionHeaderRow}>
               <Text style={[styles.sectionTitle, { color: colors.text }]}>
                 {t("আমার ঠিকানা বই", "Address Book")}
               </Text>
+              <TouchableOpacity onPress={() => setShowAddressModal(true)} style={styles.addAddrBtn}>
+                <Plus size={18} color={colors.primary} />
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity onPress={() => setShowAddressModal(true)} style={styles.addAddrBtn}>
-              <Plus size={16} color={colors.primary} />
-            </TouchableOpacity>
-          </View>
 
-          {(user?.addresses || []).length === 0 ? (
-            <Text style={[styles.emptySectionText, { color: colors.muted }]}>
-              {t("কোনো ঠিকানা যোগ করা হয়নি।", "No shipping address added yet.")}
-            </Text>
-          ) : (
-            (user?.addresses || []).map((addr, idx) => (
-              <View
-                key={idx}
-                style={[
-                  styles.addressCard,
-                  { borderColor: addr.isDefault ? colors.primary : colors.border },
-                ]}
-              >
-                <View style={styles.addrHeader}>
-                  <Text style={[styles.addrLabel, { color: colors.primary }]}>{addr.label}</Text>
-                  {addr.isDefault && (
-                    <View style={styles.defaultBadge}>
-                      <Text style={styles.defaultBadgeText}>{t("ডিফল্ট", "Default")}</Text>
-                    </View>
-                  )}
-                </View>
-                <Text style={[styles.addrInfo, { color: colors.text }]}>{addr.name} | {addr.phone}</Text>
-                <Text style={[styles.addrText, { color: colors.textSecondary }]}>
-                  {addr.address}, {addr.area}, {addr.city}, {addr.district}
-                </Text>
+            {(user?.addresses || []).length === 0 ? (
+              <Text style={[styles.emptySectionText, { color: colors.muted, marginVertical: 12 }]}>
+                {t("কোনো ঠিকানা যোগ করা হয়নি।", "No shipping address added yet.")}
+              </Text>
+            ) : (
+              (user?.addresses || []).map((addr, idx) => (
+                <View
+                  key={idx}
+                  style={[
+                    styles.addressCard,
+                    { borderColor: addr.isDefault ? colors.primary : colors.border, backgroundColor: colors.background },
+                  ]}
+                >
+                  <View style={styles.addrHeader}>
+                    <Text style={[styles.addrLabel, { color: colors.primary }]}>{addr.label}</Text>
+                    {addr.isDefault && (
+                      <View style={styles.defaultBadge}>
+                        <Text style={styles.defaultBadgeText}>{t("ডিফল্ট", "Default")}</Text>
+                      </View>
+                    )}
+                  </View>
+                  <Text style={[styles.addrInfo, { color: colors.text }]}>{addr.name} | {addr.phone}</Text>
+                  <Text style={[styles.addrText, { color: colors.textSecondary }]}>
+                    {addr.address}, {addr.area}, {addr.city}, {addr.district}
+                  </Text>
 
-                <View style={styles.addrActions}>
-                  {!addr.isDefault && (
+                  <View style={styles.addrActions}>
+                    {!addr.isDefault && (
+                      <TouchableOpacity
+                        onPress={() => setDefaultAddress(idx)}
+                        style={[styles.addrActionBtn, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1 }]}
+                      >
+                        <Check size={12} color={colors.textSecondary} />
+                        <Text style={[styles.addrActionBtnText, { color: colors.textSecondary }]}>
+                          {t("ডিফল্ট করুন", "Set Default")}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
                     <TouchableOpacity
-                      onPress={() => setDefaultAddress(idx)}
-                      style={[styles.addrActionBtn, { backgroundColor: colors.background }]}
+                      onPress={() => removeAddress(idx)}
+                      style={[styles.addrActionBtn, { backgroundColor: "rgba(211, 47, 47, 0.08)" }]}
                     >
-                      <Check size={12} color={colors.textSecondary} />
-                      <Text style={[styles.addrActionBtnText, { color: colors.textSecondary }]}>
-                        {t("ডিফল্ট করুন", "Set Default")}
-                      </Text>
+                      <Trash2 size={12} color="#d32f2f" />
+                      <Text style={[styles.addrActionBtnText, { color: "#d32f2f" }]}>{t("মুছুন", "Delete")}</Text>
                     </TouchableOpacity>
-                  )}
-                  <TouchableOpacity
-                    onPress={() => removeAddress(idx)}
-                    style={[styles.addrActionBtn, { backgroundColor: "rgba(211, 47, 47, 0.08)" }]}
-                  >
-                    <Trash2 size={12} color="#d32f2f" />
-                    <Text style={[styles.addrActionBtnText, { color: "#d32f2f" }]}>{t("মুছুন", "Delete")}</Text>
-                  </TouchableOpacity>
+                  </View>
                 </View>
-              </View>
-            ))
-          )}
-        </View>
+              ))
+            )}
+          </View>
+        )}
 
-        {/* Order History */}
-        <View style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={styles.sectionTitleGroup}>
-            <Package size={18} color={colors.primary} />
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+        {/* 4. ORDERS TAB */}
+        {activeTab === "orders" && (
+          <View style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 16 }]}>
               {t("আমার অর্ডারসমূহ", "Order History")}
             </Text>
-          </View>
 
-          {ordersLoading ? (
-            <ActivityIndicator size="small" color="#c9a84c" style={{ marginVertical: 20 }} />
-          ) : orders.length === 0 ? (
-            <Text style={[styles.emptySectionText, { color: colors.muted }]}>
-              {t("কোনো অর্ডার পাওয়া যায়নি।", "You haven't placed any orders yet.")}
-            </Text>
-          ) : (
-            orders.map((ord) => {
-              return (
-                <View key={ord._id} style={[styles.orderCard, { borderColor: colors.border }]}>
-                  <View style={styles.orderHead}>
-                    <Text style={[styles.orderNumber, { color: colors.text }]}>{ord.orderNumber}</Text>
-                    <View style={[styles.statusBadge, { backgroundColor: ord.status === "delivered" ? "#2e7d32" : "#f57c00" }]}>
-                      <Text style={styles.statusText}>{ord.status.toUpperCase()}</Text>
+            {ordersLoading ? (
+              <ActivityIndicator size="small" color="#c9a84c" style={{ marginVertical: 20 }} />
+            ) : orders.length === 0 ? (
+              <Text style={[styles.emptySectionText, { color: colors.muted }]}>
+                {t("কোনো অর্ডার পাওয়া যায়নি।", "You haven't placed any orders yet.")}
+              </Text>
+            ) : (
+              orders.map((ord) => {
+                return (
+                  <View key={ord._id} style={[styles.orderCard, { borderColor: colors.border, backgroundColor: colors.background }]}>
+                    <View style={styles.orderHead}>
+                      <Text style={[styles.orderNumber, { color: colors.text }]}>{ord.orderNumber}</Text>
+                      <View style={[styles.statusBadge, { backgroundColor: ord.status === "delivered" ? "#2e7d32" : "#f57c00" }]}>
+                        <Text style={styles.statusText}>{ord.status.toUpperCase()}</Text>
+                      </View>
                     </View>
+                    <Text style={[styles.orderMeta, { color: colors.muted }]}>
+                      {new Date(ord.createdAt).toLocaleDateString()}
+                    </Text>
+                    <Text style={[styles.orderItemsCount, { color: colors.text }]}>
+                      {ord.items.length} {t("টি পণ্য", "fragrance(s)")}
+                    </Text>
+                    <Text style={[styles.orderTotal, { color: colors.primary }]}>
+                      {t("মোট: ", "Total: ")}৳{ord.total}
+                    </Text>
                   </View>
-                  <Text style={[styles.orderMeta, { color: colors.muted }]}>
-                    {new Date(ord.createdAt).toLocaleDateString()}
-                  </Text>
-                  <Text style={[styles.orderItemsCount, { color: colors.text }]}>
-                    {ord.items.length} {t("টি পণ্য", "fragrance(s)")}
-                  </Text>
-                  <Text style={[styles.orderTotal, { color: colors.primary }]}>
-                    {t("মোট: ", "Total: ")}৳{ord.total}
-                  </Text>
-                </View>
-              );
-            })
-          )}
-        </View>
+                );
+              })
+            )}
+          </View>
+        )}
 
       </ScrollView>
 
@@ -389,7 +650,7 @@ export default function AccountScreen() {
           <View style={[styles.modalContent, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Text style={[styles.modalTitle, { color: colors.text }]}>{t("নতুন ঠিকানা যোগ করুন", "Add Address")}</Text>
 
-            <ScrollView contentContainerStyle={styles.modalScroll}>
+            <ScrollView contentContainerStyle={styles.modalScroll} showsVerticalScrollIndicator={false}>
               <TextInput
                 placeholder={t("ঠিকানার ধরণ (Home, Office ইত্যাদি)", "Label (Home, Office, etc.)")}
                 placeholderTextColor={colors.muted}
@@ -401,14 +662,14 @@ export default function AccountScreen() {
                 placeholder={t("গ্রহীতার নাম", "Recipient Name")}
                 placeholderTextColor={colors.muted}
                 value={addrName}
-                onChangeText={addrName => setAddrName(addrName)}
+                onChangeText={setAddrName}
                 style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
               />
               <TextInput
                 placeholder={t("মোবাইল নম্বর", "Mobile Number")}
                 placeholderTextColor={colors.muted}
                 value={addrPhone}
-                onChangeText={addrPhone => setAddrPhone(addrPhone)}
+                onChangeText={setAddrPhone}
                 keyboardType="phone-pad"
                 style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
               />
@@ -416,28 +677,28 @@ export default function AccountScreen() {
                 placeholder={t("রাস্তা / বাড়ি নং / গ্রাম", "Street / House / Village")}
                 placeholderTextColor={colors.muted}
                 value={addrStreet}
-                onChangeText={addrStreet => setAddrStreet(addrStreet)}
+                onChangeText={setAddrStreet}
                 style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
               />
               <TextInput
                 placeholder={t("থানা / এলাকা", "Area / Police Station")}
                 placeholderTextColor={colors.muted}
                 value={addrArea}
-                onChangeText={addrArea => setAddrArea(addrArea)}
+                onChangeText={setAddrArea}
                 style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
               />
               <TextInput
                 placeholder={t("শহর", "City / Town")}
                 placeholderTextColor={colors.muted}
                 value={addrCity}
-                onChangeText={addrCity => setAddrCity(addrCity)}
+                onChangeText={setAddrCity}
                 style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
               />
               <TextInput
                 placeholder={t("জেলা", "District")}
                 placeholderTextColor={colors.muted}
                 value={addrDistrict}
-                onChangeText={addrDistrict => setAddrDistrict(addrDistrict)}
+                onChangeText={setAddrDistrict}
                 style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
               />
 
@@ -559,12 +820,33 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 4,
   },
+  successText: {
+    color: "#2e7d32",
+    fontSize: 12,
+    textAlign: "center",
+    marginTop: 4,
+    fontWeight: "bold",
+  },
   profileHeader: {
     borderWidth: 1,
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 20,
     marginBottom: 16,
     alignItems: "center",
+  },
+  avatarCircle: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    borderWidth: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  avatarText: {
+    fontSize: 28,
+    fontWeight: "bold",
+    fontFamily: "serif",
   },
   profileName: {
     fontSize: 22,
@@ -593,9 +875,28 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "bold",
   },
+  dashboardTabs: {
+    flexDirection: "row",
+    borderBottomWidth: 1,
+    marginBottom: 16,
+    justifyContent: "space-between",
+  },
+  dashboardTabButton: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: "center",
+    borderBottomWidth: 2,
+    borderBottomColor: "transparent",
+    flexDirection: "column",
+    gap: 4,
+  },
+  dashboardTabText: {
+    fontSize: 10.5,
+    fontWeight: "bold",
+  },
   sectionCard: {
     borderWidth: 1,
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 20,
     marginBottom: 16,
   },
@@ -605,28 +906,107 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 16,
   },
-  sectionTitleGroup: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 16,
-  },
   sectionTitle: {
     fontSize: 15,
     fontWeight: "bold",
     fontFamily: "serif",
   },
-  addAddrBtn: {
-    padding: 4,
+  formGroup: {
+    marginBottom: 16,
+  },
+  inputLabel: {
+    fontSize: 12,
+    marginBottom: 6,
+    fontWeight: "600",
+  },
+  dashboardInput: {
+    height: 44,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    fontSize: 13.5,
+  },
+  emptyContainer: {
+    alignItems: "center",
+    paddingVertical: 24,
   },
   emptySectionText: {
     fontSize: 12.5,
     textAlign: "center",
-    paddingVertical: 12,
+    marginBottom: 16,
+  },
+  shopNowBtn: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+  },
+  shopNowBtnText: {
+    fontSize: 12.5,
+    fontWeight: "bold",
+  },
+  wishlistCard: {
+    flexDirection: "row",
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 10,
+    marginBottom: 12,
+    alignItems: "center",
+  },
+  wishlistImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+  },
+  wishlistInfo: {
+    flex: 1,
+    marginLeft: 12,
+    justifyContent: "center",
+  },
+  wishlistName: {
+    fontSize: 13.5,
+    fontWeight: "bold",
+  },
+  wishlistTagline: {
+    fontSize: 11,
+    marginTop: 1.5,
+  },
+  wishlistMeta: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 4,
+    gap: 12,
+  },
+  wishlistPrice: {
+    fontSize: 13,
+    fontWeight: "bold",
+  },
+  wishlistRating: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+  },
+  wishlistRatingText: {
+    fontSize: 10.5,
+    fontWeight: "600",
+  },
+  wishlistActions: {
+    flexDirection: "row",
+    gap: 8,
+    marginLeft: 8,
+  },
+  wishlistIconBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  addAddrBtn: {
+    padding: 4,
   },
   addressCard: {
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 12,
     marginBottom: 12,
   },
@@ -679,8 +1059,10 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   orderCard: {
-    borderBottomWidth: 1,
-    paddingVertical: 12,
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
   },
   orderHead: {
     flexDirection: "row",

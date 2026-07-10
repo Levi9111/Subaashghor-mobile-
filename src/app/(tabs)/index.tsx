@@ -16,9 +16,9 @@ import { useRouter } from "expo-router";
 import { useLang } from "@/lib/i18n";
 import { Colors } from "@/constants/theme";
 import Animated, { FadeInDown } from "react-native-reanimated";
-import { productsApi, Product, collectionsApi, Collection } from "@/lib/api";
+import { productsApi, Product, collectionsApi, Collection, postsApi, Post } from "@/lib/api";
 import { useWishlist } from "@/lib/wishlist";
-import { Heart, Star, ShoppingBag, ArrowRight } from "lucide-react-native";
+import { Heart, Star, ShoppingBag, ArrowRight, BookOpen } from "lucide-react-native";
 
 const { width } = Dimensions.get("window");
 
@@ -49,6 +49,30 @@ const BANNERS = [
   }
 ];
 
+const TESTIMONIALS = [
+  {
+    id: "t1",
+    name: "Tanvir Rahman",
+    rating: 5,
+    quoteBn: "আসল ও দীর্ঘস্থায়ী ঘ্রাণ! উদ রয়্যাল আতরটির সুরভী সারাদিন আচ্ছন্ন করে রাখে। প্যাকেজিং সত্যিই প্রশংসনীয় ছিল।",
+    quoteEn: "Authentic and extremely long-lasting scent! Oud Royale kept me smelling great all day. The packaging was highly premium.",
+  },
+  {
+    id: "t2",
+    name: "Nusrat Jahan",
+    rating: 5,
+    quoteBn: "রোজ মাস্ক পারফিউমটা অসাধারণ মিষ্টি একটা ফ্লোরাল সুবাস। তাদের কাস্টমার সার্ভিস ও দ্রুত ডেলিভারির জন্য ধন্যবাদ।",
+    quoteEn: "Rose Musk is a beautiful sweet floral fragrance. Excellent client support and super fast delivery. Highly recommended!",
+  },
+  {
+    id: "t3",
+    name: "Zamil Hossain",
+    rating: 5,
+    quoteBn: "মিডনাইট জাফরান একদম অনন্য একটি ফ্লেভার। এর উডি এবং স্পাইসি নোটগুলো অনেক চমৎকার ও রাজকীয় আমেজ দেয়।",
+    quoteEn: "Midnight Saffron is an incredibly unique fragrance. Its woody and spicy notes offer an elegant, royal vibe.",
+  }
+];
+
 export default function HomeScreen() {
   const router = useRouter();
   const { t, lang } = useLang();
@@ -58,6 +82,7 @@ export default function HomeScreen() {
 
   const [featured, setFeatured] = useState<Product[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
+  const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeSlide, setActiveSlide] = useState(0);
   const scrollRef = React.useRef<ScrollView>(null);
@@ -78,6 +103,12 @@ export default function HomeScreen() {
         const collectionsData = await collectionsApi.list();
         setFeatured(featuredData);
         setCollections(collectionsData);
+        try {
+          const postsData = await postsApi.list();
+          setPosts(postsData);
+        } catch (err) {
+          console.error("Failed to load blog posts:", err);
+        }
       } catch (err) {
         console.error("Failed to load home page data:", err);
       } finally {
@@ -167,7 +198,7 @@ export default function HomeScreen() {
           <ImageBackground
             source={{ uri: item.cover }}
             style={styles.collectionBg}
-            imageStyle={{ borderRadius: 8 }}
+            imageStyle={{ borderRadius: 12 }}
           >
             <View style={styles.collectionOverlay}>
               <Text style={styles.collectionName}>{lang === "bn" ? item.name.bn : item.name.en}</Text>
@@ -181,12 +212,54 @@ export default function HomeScreen() {
     );
   };
 
+  const renderPostItem = ({ item, index }: { item: Post; index: number }) => {
+    return (
+      <Animated.View entering={FadeInDown.delay(index * 80).duration(450)}>
+        <TouchableOpacity
+          activeOpacity={0.9}
+          style={[styles.postCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+        >
+          <Image source={{ uri: item.cover }} style={styles.postImage} />
+          <View style={styles.postInfo}>
+            <Text style={[styles.postCategory, { color: colors.primary }]}>
+              {lang === "bn" ? item.category.bn : item.category.en}
+            </Text>
+            <Text style={[styles.postTitle, { color: colors.text }]} numberOfLines={2}>
+              {lang === "bn" ? item.title.bn : item.title.en}
+            </Text>
+            <Text style={[styles.postDate, { color: colors.muted }]}>
+              {new Date(item.date).toLocaleDateString()}
+            </Text>
+          </View>
+        </TouchableOpacity>
+      </Animated.View>
+    );
+  };
+
+  const renderTestimonialItem = ({ item, index }: { item: typeof TESTIMONIALS[0]; index: number }) => {
+    return (
+      <Animated.View entering={FadeInDown.delay(index * 80).duration(450)}>
+        <View style={[styles.testimonialCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={styles.ratingRow}>
+            {Array.from({ length: item.rating }).map((_, i) => (
+              <Star key={i} size={13} color="#c9a84c" fill="#c9a84c" style={{ marginRight: 2 }} />
+            ))}
+          </View>
+          <Text style={[styles.testimonialQuote, { color: colors.text }]} numberOfLines={4}>
+            "{lang === "bn" ? item.quoteBn : item.quoteEn}"
+          </Text>
+          <Text style={[styles.testimonialAuthor, { color: colors.primary }]}>
+            - {item.name}
+          </Text>
+        </View>
+      </Animated.View>
+    );
+  };
+
   return (
     <View style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         
-
-
         {/* Working Hero Carousel */}
         <View style={styles.carouselContainer}>
           <ScrollView
@@ -295,6 +368,40 @@ export default function HomeScreen() {
               renderItem={renderProductItem}
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.featuredList}
+            />
+
+            {/* The Scent Diary (Blog) */}
+            {posts.length > 0 && (
+              <>
+                <View style={styles.sectionHeader}>
+                  <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                    {t("সেন্ট ডায়েরি", "The Scent Diary")}
+                  </Text>
+                </View>
+                <FlatList
+                  horizontal
+                  data={posts}
+                  keyExtractor={(item) => item._id}
+                  renderItem={renderPostItem}
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.postsList}
+                />
+              </>
+            )}
+
+            {/* What Our Customers Say (Testimonials) */}
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                {t("ক্রেতাদের মতামত", "What Our Customers Say")}
+              </Text>
+            </View>
+            <FlatList
+              horizontal
+              data={TESTIMONIALS}
+              keyExtractor={(item) => item.id}
+              renderItem={renderTestimonialItem}
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.testimonialsList}
             />
           </>
         )}
@@ -408,7 +515,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginHorizontal: 16,
     padding: 16,
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     marginBottom: 24,
   },
@@ -472,7 +579,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(28, 5, 7, 0.4)",
     padding: 12,
     justifyContent: "flex-end",
-    borderRadius: 8,
+    borderRadius: 12,
   },
   collectionName: {
     fontSize: 16,
@@ -492,7 +599,7 @@ const styles = StyleSheet.create({
   },
   productCard: {
     width: width * 0.44,
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     marginRight: 12,
     overflow: "hidden",
@@ -581,11 +688,71 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  postsList: {
+    paddingLeft: 16,
+    paddingRight: 8,
+    marginBottom: 24,
+  },
+  postCard: {
+    width: width * 0.6,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginRight: 12,
+    overflow: "hidden",
+  },
+  postImage: {
+    width: "100%",
+    height: 100,
+  },
+  postInfo: {
+    padding: 10,
+  },
+  postCategory: {
+    fontSize: 9.5,
+    fontWeight: "bold",
+    textTransform: "uppercase",
+    marginBottom: 4,
+  },
+  postTitle: {
+    fontSize: 12.5,
+    fontWeight: "bold",
+    lineHeight: 18,
+    height: 36,
+  },
+  postDate: {
+    fontSize: 10,
+    marginTop: 6,
+  },
+  testimonialsList: {
+    paddingLeft: 16,
+    paddingRight: 8,
+    marginBottom: 24,
+  },
+  testimonialCard: {
+    width: width * 0.75,
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 14,
+    marginRight: 12,
+  },
+  testimonialQuote: {
+    fontSize: 12,
+    fontStyle: "italic",
+    marginTop: 8,
+    lineHeight: 18,
+    height: 72,
+  },
+  testimonialAuthor: {
+    fontSize: 12,
+    fontWeight: "bold",
+    textAlign: "right",
+    marginTop: 6,
+  },
   brandNarrative: {
     margin: 16,
     padding: 16,
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 12,
     alignItems: "center",
   },
   narrativeTitle: {
