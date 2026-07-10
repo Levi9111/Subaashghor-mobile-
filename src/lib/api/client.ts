@@ -2,9 +2,6 @@ import { ApiEnvelope, ApiError, ApiErrorBody } from "./types";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
 
-// Toggle mocks or live backend API. Set to false to use the live Express server.
-export const USE_MOCKS = false;
-
 const hostUri = Constants.expoConfig?.hostUri;
 const host = hostUri ? hostUri.split(":")[0] : "localhost";
 const BASE_URL = `http://${host}:5000/api/v1`;
