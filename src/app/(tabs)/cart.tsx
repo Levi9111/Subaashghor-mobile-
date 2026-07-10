@@ -7,9 +7,9 @@ import {
   TouchableOpacity,
   Image,
   TextInput,
-  useColorScheme,
   Dimensions,
 } from "react-native";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useCart, CartItem } from "@/lib/cart";
 import { useLang } from "@/lib/i18n";

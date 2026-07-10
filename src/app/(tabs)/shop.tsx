@@ -8,9 +8,9 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Dimensions,
-  useColorScheme,
   Image,
 } from "react-native";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useLang } from "@/lib/i18n";
@@ -293,7 +293,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 12,
     paddingHorizontal: 12,
     height: 44,
   },
@@ -309,7 +309,7 @@ const styles = StyleSheet.create({
   filterIconBtn: {
     width: 44,
     height: 44,
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     justifyContent: "center",
     alignItems: "center",
@@ -390,7 +390,7 @@ const styles = StyleSheet.create({
   },
   productCard: {
     width: width * 0.45,
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     marginBottom: 12,
     marginHorizontal: width * 0.015,
