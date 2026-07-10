@@ -235,14 +235,22 @@ function OrnamentCorner({
 
 const styles = StyleSheet.create({
   root: {
-    ...StyleSheet.absoluteFill,
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
     zIndex: 9999,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#1c0507", // Deep luxury maroon
   },
   bgBase: {
-    ...StyleSheet.absoluteFill,
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
     backgroundColor: "#1c0507",
   },
   bgGlow: {
@@ -256,7 +264,11 @@ const styles = StyleSheet.create({
     position: "absolute",
   },
   particlesContainer: {
-    ...StyleSheet.absoluteFill,
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
   },
   particle: {
     position: "absolute",

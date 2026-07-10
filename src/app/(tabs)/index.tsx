@@ -16,11 +16,39 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useLang } from "@/lib/i18n";
 import { Colors } from "@/constants/theme";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { productsApi, Product, collectionsApi, Collection } from "@/lib/api";
 import { useWishlist } from "@/lib/wishlist";
 import { Heart, Star, ShoppingBag, ArrowRight } from "lucide-react-native";
 
 const { width } = Dimensions.get("window");
+
+const BANNERS = [
+  {
+    id: 1,
+    title: "Oud Royale",
+    subtitleBn: "রাজকীয় উদ এবং জাফরানের অনন্য মেলবন্ধন",
+    subtitleEn: "Royal Oud & Saffron Blend",
+    image: "https://images.unsplash.com/photo-1547887537-6158d64c35b3?w=800&auto=format&fit=crop&q=80",
+    slug: "oud-royale"
+  },
+  {
+    id: 2,
+    title: "Saffron Intense",
+    subtitleBn: "তাজা জাফরান এবং কস্তুরীর তীব্র সুবাস",
+    subtitleEn: "Intense Saffron & Premium Musk",
+    image: "https://images.unsplash.com/photo-1594035910387-fea47794261f?w=800&auto=format&fit=crop&q=80",
+    slug: "oud-royale"
+  },
+  {
+    id: 3,
+    title: "Rose & Musk",
+    subtitleBn: "গোলাপের পাপড়ি এবং চন্দনের মিষ্টি সুবাস",
+    subtitleEn: "Sweet Rose Petals & Sandalwood",
+    image: "https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=800&auto=format&fit=crop&q=80",
+    slug: "oud-royale"
+  }
+];
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -32,6 +60,17 @@ export default function HomeScreen() {
   const [featured, setFeatured] = useState<Product[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeSlide, setActiveSlide] = useState(0);
+  const scrollRef = React.useRef<ScrollView>(null);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const nextSlide = (activeSlide + 1) % BANNERS.length;
+      setActiveSlide(nextSlide);
+      scrollRef.current?.scrollTo({ x: nextSlide * (width - 32), animated: true });
+    }, 4500);
+    return () => clearInterval(timer);
+  }, [activeSlide]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -49,136 +88,157 @@ export default function HomeScreen() {
     fetchData();
   }, []);
 
-  const renderProductItem = ({ item }: { item: Product }) => {
+  const renderProductItem = ({ item, index }: { item: Product; index: number }) => {
     const hasSale = item.salePrice && item.salePrice < item.price;
     const currentPrice = hasSale ? item.salePrice : item.price;
 
     return (
-      <TouchableOpacity
-        activeOpacity={0.9}
-        onPress={() => router.push(`/products/${item.slug}`)}
-        style={[styles.productCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-      >
-        {/* Wishlist toggle */}
+      <Animated.View entering={FadeInDown.delay(index * 80).duration(450)}>
         <TouchableOpacity
-          onPress={() => wishlist.toggle(item.slug)}
-          style={styles.wishlistBtn}
+          activeOpacity={0.9}
+          onPress={() => router.push(`/products/${item.slug}`)}
+          style={[styles.productCard, { backgroundColor: colors.card, borderColor: colors.border }]}
         >
-          <Heart
-            size={18}
-            color={wishlist.has(item.slug) ? "#d32f2f" : colors.muted}
-            fill={wishlist.has(item.slug) ? "#d32f2f" : "none"}
-          />
-        </TouchableOpacity>
+          {/* Wishlist toggle */}
+          <TouchableOpacity
+            onPress={() => wishlist.toggle(item.slug)}
+            style={styles.wishlistBtn}
+          >
+            <Heart
+              size={18}
+              color={wishlist.has(item.slug) ? "#d32f2f" : colors.muted}
+              fill={wishlist.has(item.slug) ? "#d32f2f" : "none"}
+            />
+          </TouchableOpacity>
 
-        {/* Badge */}
-        {item.badge && (
-          <View style={styles.badgeContainer}>
-            <Text style={styles.badgeText}>{lang === "bn" ? item.badge.bn : item.badge.en}</Text>
-          </View>
-        )}
+          {/* Badge */}
+          {item.badge && (
+            <View style={styles.badgeContainer}>
+              <Text style={styles.badgeText}>{lang === "bn" ? item.badge.bn : item.badge.en}</Text>
+            </View>
+          )}
 
-        {/* Image */}
-        <Image source={{ uri: item.images[0] }} style={styles.productImage} resizeMode="cover" />
+          {/* Image */}
+          <Image source={{ uri: item.images[0] }} style={styles.productImage} resizeMode="cover" />
 
-        {/* Info */}
-        <View style={styles.productInfo}>
-          <Text style={[styles.categoryText, { color: colors.primary }]}>
-            {t(
-              item.category === "attar" ? "আতর" : item.category === "men" ? "পুরুষ" : "মহিলা",
-              item.category.toUpperCase()
-            )}
-          </Text>
-          <Text style={[styles.productName, { color: colors.text }]} numberOfLines={1}>
-            {lang === "bn" ? item.name.bn : item.name.en}
-          </Text>
-          
-          {/* Rating */}
-          <View style={styles.ratingRow}>
-            <Star size={12} color="#c9a84c" fill="#c9a84c" />
-            <Text style={[styles.ratingVal, { color: colors.text }]}>
-              {item.rating?.toFixed(1) || "5.0"}
+          {/* Info */}
+          <View style={styles.productInfo}>
+            <Text style={[styles.categoryText, { color: colors.primary }]}>
+              {t(
+                item.category === "attar" ? "আতর" : item.category === "men" ? "পুরুষ" : "মহিলা",
+                item.category.toUpperCase()
+              )}
             </Text>
-          </View>
+            <Text style={[styles.productName, { color: colors.text }]} numberOfLines={1}>
+              {lang === "bn" ? item.name.bn : item.name.en}
+            </Text>
+            
+            {/* Rating */}
+            <View style={styles.ratingRow}>
+              <Star size={12} color="#c9a84c" fill="#c9a84c" />
+              <Text style={[styles.ratingVal, { color: colors.text }]}>
+                {item.rating?.toFixed(1) || "5.0"}
+              </Text>
+            </View>
 
-          {/* Pricing Row */}
-          <View style={styles.priceRow}>
-            <View style={styles.priceContainer}>
-              <Text style={[styles.priceText, { color: colors.primary }]}>৳{currentPrice}</Text>
-              {hasSale && <Text style={styles.oldPriceText}>৳{item.price}</Text>}
-            </View>
-            <View style={[styles.buyBtn, { backgroundColor: colors.primary }]}>
-              <ShoppingBag size={14} color={scheme === "dark" ? "#1c0507" : "#e5ded4"} />
+            {/* Pricing Row */}
+            <View style={styles.priceRow}>
+              <View style={styles.priceContainer}>
+                <Text style={[styles.priceText, { color: colors.primary }]}>৳{currentPrice}</Text>
+                {hasSale && <Text style={styles.oldPriceText}>৳{item.price}</Text>}
+              </View>
+              <View style={[styles.buyBtn, { backgroundColor: colors.primary }]}>
+                <ShoppingBag size={14} color={scheme === "dark" ? "#1c0507" : "#e5ded4"} />
+              </View>
             </View>
           </View>
-        </View>
-      </TouchableOpacity>
+        </TouchableOpacity>
+      </Animated.View>
     );
   };
 
-  const renderCollectionItem = ({ item }: { item: Collection }) => {
+  const renderCollectionItem = ({ item, index }: { item: Collection; index: number }) => {
     return (
-      <TouchableOpacity
-        activeOpacity={0.9}
-        onPress={() => router.push(`/shop?collection=${item.slug}`)}
-        style={styles.collectionCard}
-      >
-        <ImageBackground
-          source={{ uri: item.cover }}
-          style={styles.collectionBg}
-          imageStyle={{ borderRadius: 8 }}
+      <Animated.View entering={FadeInDown.delay(index * 100).duration(500)}>
+        <TouchableOpacity
+          activeOpacity={0.9}
+          onPress={() => router.push(`/shop?collection=${item.slug}`)}
+          style={styles.collectionCard}
         >
-          <View style={styles.collectionOverlay}>
-            <Text style={styles.collectionName}>{lang === "bn" ? item.name.bn : item.name.en}</Text>
-            <Text style={styles.collectionDesc}>
-              {lang === "bn" ? item.description?.bn : item.description?.en}
-            </Text>
-          </View>
-        </ImageBackground>
-      </TouchableOpacity>
+          <ImageBackground
+            source={{ uri: item.cover }}
+            style={styles.collectionBg}
+            imageStyle={{ borderRadius: 8 }}
+          >
+            <View style={styles.collectionOverlay}>
+              <Text style={styles.collectionName}>{lang === "bn" ? item.name.bn : item.name.en}</Text>
+              <Text style={styles.collectionDesc}>
+                {lang === "bn" ? item.description?.bn : item.description?.en}
+              </Text>
+            </View>
+          </ImageBackground>
+        </TouchableOpacity>
+      </Animated.View>
     );
   };
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]} edges={["top"]}>
+    <View style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         
-        {/* Luxury Header Banner */}
-        <View style={[styles.header, { borderColor: colors.border }]}>
-          <Image
-            source={require("@/assets/images/logo.png")}
-            style={{ width: 54, height: 54, marginBottom: 6 }}
-            resizeMode="contain"
-          />
-          <Text style={[styles.logoText, { color: colors.primary }]}>সুবাসঘর</Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            A HOUSE OF PURE OUTSTANDING FRAGRANCES
-          </Text>
-        </View>
 
-        {/* Hero Banner Banner */}
-        <ImageBackground
-          source={{
-            uri: "https://images.unsplash.com/photo-1547887537-6158d64c35b3?w=800&auto=format&fit=crop&q=80",
-          }}
-          style={styles.heroBackground}
-          imageStyle={{ borderRadius: 12 }}
-        >
-          <View style={styles.heroOverlay}>
-            <Text style={styles.heroTitle}>Oud Royale</Text>
-            <Text style={styles.heroTagline}>
-              {t("রাজকীয় উদ এবং জাফরানের অনন্য মেলবন্ধন", "Royal Oud & Saffron Blend")}
-            </Text>
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => router.push("/products/oud-royale")}
-              style={[styles.heroBtn, { backgroundColor: "#c9a84c" }]}
-            >
-              <Text style={styles.heroBtnText}>{t("সংগ্রহ করুন", "Shop Now")}</Text>
-              <ArrowRight size={14} color="#1c0507" />
-            </TouchableOpacity>
+
+        {/* Working Hero Carousel */}
+        <View style={styles.carouselContainer}>
+          <ScrollView
+            ref={scrollRef}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onMomentumScrollEnd={(e) => {
+              const slide = Math.round(e.nativeEvent.contentOffset.x / (width - 32));
+              setActiveSlide(slide);
+            }}
+            style={styles.heroScrollView}
+          >
+            {BANNERS.map((banner) => (
+              <ImageBackground
+                key={banner.id}
+                source={{ uri: banner.image }}
+                style={[styles.heroBackgroundItem, { width: width - 32 }]}
+                imageStyle={{ borderRadius: 12 }}
+              >
+                <View style={styles.heroOverlay}>
+                  <Text style={styles.heroTitle}>{banner.title}</Text>
+                  <Text style={styles.heroTagline}>
+                    {lang === "bn" ? banner.subtitleBn : banner.subtitleEn}
+                  </Text>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => router.push(`/products/${banner.slug}`)}
+                    style={[styles.heroBtn, { backgroundColor: "#c9a84c" }]}
+                  >
+                    <Text style={styles.heroBtnText}>{t("সংগ্রহ করুন", "Shop Now")}</Text>
+                    <ArrowRight size={14} color="#1c0507" />
+                  </TouchableOpacity>
+                </View>
+              </ImageBackground>
+            ))}
+          </ScrollView>
+
+          {/* Carousel Dot Indicators */}
+          <View style={styles.dotContainer}>
+            {BANNERS.map((_, index) => (
+              <View
+                key={index}
+                style={[
+                  styles.dot,
+                  { backgroundColor: activeSlide === index ? "#c9a84c" : "rgba(255,255,255,0.4)" },
+                ]}
+              />
+            ))}
           </View>
-        </ImageBackground>
+        </View>
 
         {/* Scent Finder CTA Banner */}
         <TouchableOpacity
@@ -254,7 +314,7 @@ export default function HomeScreen() {
         </View>
 
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -282,14 +342,38 @@ const styles = StyleSheet.create({
     letterSpacing: 1.5,
     marginTop: 2,
   },
-  heroBackground: {
+  carouselContainer: {
     height: 180,
     marginHorizontal: 16,
     marginVertical: 16,
+    position: "relative",
+  },
+  heroScrollView: {
+    flex: 1,
+  },
+  heroBackgroundItem: {
+    height: 180,
     overflow: "hidden",
   },
+  dotContainer: {
+    position: "absolute",
+    bottom: 12,
+    right: 16,
+    flexDirection: "row",
+    gap: 6,
+    zIndex: 10,
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
   heroOverlay: {
-    ...StyleSheet.absoluteFill,
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
     backgroundColor: "rgba(28, 5, 7, 0.45)",
     padding: 16,
     justifyContent: "flex-end",
@@ -374,10 +458,18 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   collectionBg: {
-    ...StyleSheet.absoluteFill,
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
   },
   collectionOverlay: {
-    ...StyleSheet.absoluteFill,
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
     backgroundColor: "rgba(28, 5, 7, 0.4)",
     padding: 12,
     justifyContent: "flex-end",

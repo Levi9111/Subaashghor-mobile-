@@ -1,12 +1,105 @@
-import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity, useColorScheme, Dimensions } from "react-native";
+import React, { useEffect, useRef } from "react";
+import { View, Text, StyleSheet, TouchableOpacity, useColorScheme, Dimensions, Animated } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useLang } from "@/lib/i18n";
 import { Colors } from "@/constants/theme";
 import { CheckCircle2, Home, Package } from "lucide-react-native";
 
-const { width } = Dimensions.get("window");
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
+const CONFETTI_COLORS = ["#c9a84c", "#1c0507", "#e5ded4", "#800020", "#ffd700", "#d4af37"];
+
+interface ParticleProps {
+  delay: number;
+}
+
+function ConfettiParticle({ delay }: ParticleProps) {
+  const startX = Math.random() * SCREEN_WIDTH;
+  const endX = startX + (Math.random() * 160 - 80);
+  
+  const animatedY = useRef(new Animated.Value(-20)).current;
+  const animatedX = useRef(new Animated.Value(startX)).current;
+  const animatedRotate = useRef(new Animated.Value(0)).current;
+  const animatedOpacity = useRef(new Animated.Value(1)).current;
+  
+  const color = CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)];
+  const size = Math.random() * 8 + 6;
+  const isCircle = Math.random() > 0.5;
+
+  useEffect(() => {
+    const duration = Math.random() * 3000 + 2500;
+    
+    Animated.sequence([
+      Animated.delay(delay),
+      Animated.parallel([
+        Animated.timing(animatedY, {
+          toValue: SCREEN_HEIGHT + 20,
+          duration,
+          useNativeDriver: true,
+        }),
+        Animated.timing(animatedX, {
+          toValue: endX,
+          duration,
+          useNativeDriver: true,
+        }),
+        Animated.timing(animatedRotate, {
+          toValue: 1,
+          duration,
+          useNativeDriver: true,
+        }),
+        Animated.sequence([
+          Animated.delay(duration - 800),
+          Animated.timing(animatedOpacity, {
+            toValue: 0,
+            duration: 800,
+            useNativeDriver: true,
+          })
+        ])
+      ])
+    ]).start();
+  }, [delay, endX]);
+
+  const rotateInterpolate = animatedRotate.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0deg", "720deg"],
+  });
+
+  return (
+    <Animated.View
+      style={[
+        styles.particle,
+        {
+          width: size,
+          height: size,
+          borderRadius: isCircle ? size / 2 : 2,
+          backgroundColor: color,
+          opacity: animatedOpacity,
+          transform: [
+            { translateX: animatedX },
+            { translateY: animatedY },
+            { rotate: rotateInterpolate },
+          ],
+        },
+      ]}
+    />
+  );
+}
+
+function Confetti() {
+  // Generate 80 particles with staggered delays
+  const particles = Array.from({ length: 80 }).map((_, i) => ({
+    id: i,
+    delay: Math.random() * 2000,
+  }));
+
+  return (
+    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+      {particles.map((p) => (
+        <ConfettiParticle key={p.id} delay={p.delay} />
+      ))}
+    </View>
+  );
+}
 
 export default function ThankYouScreen() {
   const { orderNumber } = useLocalSearchParams();
@@ -17,8 +110,10 @@ export default function ThankYouScreen() {
 
   return (
     <SafeAreaView style={[styles.root, { backgroundColor: colors.background }]}>
+      {/* Luxury Confetti Overlay */}
+      <Confetti />
+
       <View style={styles.content}>
-        
         {/* Animated styled check circle */}
         <CheckCircle2 size={72} color="#2e7d32" style={styles.icon} />
 
@@ -66,7 +161,6 @@ export default function ThankYouScreen() {
             </Text>
           </TouchableOpacity>
         </View>
-
       </View>
     </SafeAreaView>
   );
@@ -83,6 +177,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     maxWidth: 400,
     width: "100%",
+    zIndex: 10,
+  },
+  particle: {
+    position: "absolute",
+    top: 0,
+    left: 0,
   },
   icon: {
     marginBottom: 24,

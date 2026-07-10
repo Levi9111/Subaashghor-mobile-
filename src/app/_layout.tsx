@@ -7,6 +7,7 @@ import { AuthProvider } from "@/lib/auth";
 import { CartProvider } from "@/lib/cart";
 import { WishlistProvider } from "@/lib/wishlist";
 import { WelcomeSplash } from "@/components/WelcomeSplash";
+import { ThemeProvider } from "@/hooks/use-color-scheme";
 
 // Keep the native splash screen visible until we mount the app layout
 SplashScreen.preventAutoHideAsync();
@@ -18,11 +19,12 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <LanguageProvider>
-      <AuthProvider>
-        <CartProvider>
-          <WishlistProvider>
-            <View style={{ flex: 1 }}>
+    <ThemeProvider>
+      <LanguageProvider>
+        <AuthProvider>
+          <CartProvider>
+            <WishlistProvider>
+              <View style={{ flex: 1 }}>
               {/* Stack navigator containing all route pages */}
               <Stack screenOptions={{ headerShown: false }}>
                 <Stack.Screen name="(tabs)" />
@@ -57,5 +59,6 @@ export default function RootLayout() {
         </CartProvider>
       </AuthProvider>
     </LanguageProvider>
+    </ThemeProvider>
   );
 }
