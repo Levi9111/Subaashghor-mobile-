@@ -143,7 +143,12 @@ export default function CheckoutScreen() {
       // Navigate to Thank you
       router.push(`/thank-you?orderNumber=${result.orderNumber}`);
     } catch (err: any) {
-      setErrorMsg(err.message || t("অর্ডার করতে সমস্যা হয়েছে।", "Failed to place order."));
+      if (err.body?.errorSources && Array.isArray(err.body.errorSources)) {
+        const details = err.body.errorSources.map((e: any) => `${e.path}: ${e.message}`).join(", ");
+        setErrorMsg(`${err.message} (${details})`);
+      } else {
+        setErrorMsg(err.message || t("অর্ডার করতে সমস্যা হয়েছে।", "Failed to place order."));
+      }
     } finally {
       setLoading(false);
     }
