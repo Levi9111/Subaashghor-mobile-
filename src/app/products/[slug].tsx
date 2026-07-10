@@ -18,7 +18,8 @@ import { productsApi, reviewsApi, Product, Review, Size } from "@/lib/api";
 import { useWishlist } from "@/lib/wishlist";
 import { useCart } from "@/lib/cart";
 import { useAuth } from "@/lib/auth";
-import { Heart, Star, ShoppingCart, MessageSquare, Send } from "lucide-react-native";
+import { Heart, Star, ShoppingCart, MessageSquare, Send, ChevronLeft } from "lucide-react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const { width } = Dimensions.get("window");
 
@@ -118,7 +119,19 @@ export default function ProductDetailScreen() {
   };
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.scrollContent}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={["top"]}>
+      {/* Custom SubHeader */}
+      <View style={[styles.customHeader, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <ChevronLeft size={24} color={colors.text} />
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={1}>
+          {product ? (lang === "bn" ? product.name.bn : product.name.en) : t("পণ্য বিবরণী", "Product Details")}
+        </Text>
+        <View style={{ width: 40 }} />
+      </View>
+
+      <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.scrollContent}>
       
       {/* Product Image */}
       <View style={styles.imageContainer}>
@@ -299,6 +312,7 @@ export default function ProductDetailScreen() {
 
       </View>
     </ScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -527,5 +541,27 @@ const styles = StyleSheet.create({
   reviewDate: {
     fontSize: 9.5,
     marginTop: 4,
+  },
+  customHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    height: 56,
+    borderBottomWidth: 1,
+  },
+  backBtn: {
+    width: 40,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 20,
+  },
+  headerTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    fontFamily: "serif",
+    textAlign: "center",
+    flex: 1,
   },
 });

@@ -7,6 +7,7 @@ import { useCart } from "@/lib/cart";
 import { useLang } from "@/lib/i18n";
 import { Header } from "@/components/Header";
 import { useState } from "react";
+import { WhatsAppFab } from "@/components/WhatsAppFab";
 
 const TABS = ["/", "/shop", "/scent-finder", "/cart", "/account"];
 
@@ -19,15 +20,26 @@ export default function TabLayout() {
   const { t } = useLang();
   const insets = useSafeAreaInsets();
   
-  const [touchX, setTouchX] = useState(0);
+  const [touchStart, setTouchStart] = useState({ x: 0, y: 0 });
 
-  const handleTouchStart = (e: any) => {
-    setTouchX(e.nativeEvent.pageX);
+  const handleStart = (e: any) => {
+    setTouchStart({
+      x: e.nativeEvent.pageX,
+      y: e.nativeEvent.pageY,
+    });
+    return false; // let children handle initially
   };
 
-  const handleTouchEnd = (e: any) => {
-    const deltaX = e.nativeEvent.pageX - touchX;
-    const swipeThreshold = 80; // optimal distance threshold for tab swipe
+  const handleMoveCapture = (e: any) => {
+    const dx = e.nativeEvent.pageX - touchStart.x;
+    const dy = e.nativeEvent.pageY - touchStart.y;
+    // Capture only if movement is primarily horizontal and exceeds threshold
+    return Math.abs(dx) > 35 && Math.abs(dx) > Math.abs(dy) * 1.5;
+  };
+
+  const handleRelease = (e: any) => {
+    const deltaX = e.nativeEvent.pageX - touchStart.x;
+    const swipeThreshold = 70; // responsive threshold for tab swipes
 
     if (Math.abs(deltaX) > swipeThreshold) {
       const currentIndex = TABS.indexOf(pathname);
@@ -46,8 +58,9 @@ export default function TabLayout() {
   return (
     <View
       style={{ flex: 1 }}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
+      onStartShouldSetResponder={handleStart}
+      onMoveShouldSetResponderCapture={handleMoveCapture}
+      onResponderRelease={handleRelease}
     >
       <Tabs
         screenOptions={{
@@ -120,6 +133,7 @@ export default function TabLayout() {
           }}
         />
       </Tabs>
+      <WhatsAppFab />
     </View>
   );
 }

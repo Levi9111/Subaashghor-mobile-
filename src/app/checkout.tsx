@@ -15,7 +15,8 @@ import { useCart } from "@/lib/cart";
 import { useLang } from "@/lib/i18n";
 import { Colors } from "@/constants/theme";
 import { ordersApi, couponsApi, Coupon } from "@/lib/api";
-import { Check, CreditCard, Landmark, Truck } from "lucide-react-native";
+import { Check, CreditCard, Landmark, Truck, ChevronLeft } from "lucide-react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function CheckoutScreen() {
   const router = useRouter();
@@ -133,7 +134,19 @@ export default function CheckoutScreen() {
   };
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.scrollContent}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={["top"]}>
+      {/* Custom SubHeader */}
+      <View style={[styles.customHeader, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <ChevronLeft size={24} color={colors.text} />
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>
+          {t("চেকআউট", "Checkout")}
+        </Text>
+        <View style={{ width: 40 }} />
+      </View>
+
+      <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.scrollContent}>
       
       {/* Shipping details */}
       <View style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -289,6 +302,7 @@ export default function CheckoutScreen() {
       </TouchableOpacity>
 
     </ScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -386,5 +400,27 @@ const styles = StyleSheet.create({
   orderBtnText: {
     fontSize: 14.5,
     fontWeight: "bold",
+  },
+  customHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    height: 56,
+    borderBottomWidth: 1,
+  },
+  backBtn: {
+    width: 40,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 20,
+  },
+  headerTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    fontFamily: "serif",
+    textAlign: "center",
+    flex: 1,
   },
 });
