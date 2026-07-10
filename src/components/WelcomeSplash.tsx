@@ -58,8 +58,6 @@ export function WelcomeSplash() {
     return () => clearTimeout(exitTimer);
   }, []);
 
-  if (!visible) return null;
-
   // Animated styles
   const rootAnimatedStyle = useAnimatedStyle(() => ({
     opacity: rootOpacity.value,
@@ -73,6 +71,8 @@ export function WelcomeSplash() {
     opacity: contentOpacity.value,
     transform: [{ scale: contentScale.value }],
   }));
+
+  if (!visible) return null;
 
   return (
     <Animated.View style={[styles.root, rootAnimatedStyle]} pointerEvents="none">
