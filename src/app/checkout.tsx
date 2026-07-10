@@ -15,7 +15,7 @@ import { useAuth } from "@/lib/auth";
 import { useCart } from "@/lib/cart";
 import { useLang } from "@/lib/i18n";
 import { Colors } from "@/constants/theme";
-import { ordersApi, couponsApi, Coupon } from "@/lib/api";
+import { ordersApi, couponsApi, Coupon, productsApi } from "@/lib/api";
 import { Check, CreditCard, Landmark, Truck, ChevronLeft } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -96,15 +96,30 @@ export default function CheckoutScreen() {
 
     setLoading(true);
     try {
-      const orderItems = items.map((i) => ({
-        productId: i.productId || i.slug,
-        slug: i.slug,
-        name: i.name,
-        image: i.image,
-        ml: i.ml,
-        price: i.price,
-        qty: i.qty,
-      }));
+      const orderItems = await Promise.all(
+        items.map(async (i) => {
+          let productId = i.productId;
+          if (!productId || !productId.match(/^[0-9a-fA-F]{24}$/)) {
+            try {
+              const product = await productsApi.get(i.slug);
+              if (product?._id) {
+                productId = product._id;
+              }
+            } catch (err) {
+              console.error(`Failed to resolve product ID for ${i.slug}:`, err);
+            }
+          }
+          return {
+            productId: productId || i.slug,
+            slug: i.slug,
+            name: i.name,
+            image: i.image,
+            ml: i.ml,
+            price: i.price,
+            qty: i.qty,
+          };
+        })
+      );
 
       const orderData = {
         items: orderItems,
