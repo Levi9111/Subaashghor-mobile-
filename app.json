@@ -15,7 +15,8 @@
         "backgroundColor": "#1c0507",
         "foregroundImage": "./assets/images/android-icon-foreground.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "levi9111.subaashghor.mobile"
     },
     "web": {
       "output": "static",
@@ -35,6 +36,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "2c3ec04e-b0c4-4ced-af3d-f9df4118c35d"
+      }
     }
   }
 }
