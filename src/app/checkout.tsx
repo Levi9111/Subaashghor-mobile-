@@ -7,8 +7,9 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
-  useColorScheme,
+  
 } from "react-native";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth";
 import { useCart } from "@/lib/cart";

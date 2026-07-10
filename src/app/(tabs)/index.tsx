@@ -9,10 +9,9 @@ import {
   FlatList,
   Image,
   Dimensions,
-  useColorScheme,
   ActivityIndicator,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useRouter } from "expo-router";
 import { useLang } from "@/lib/i18n";
 import { Colors } from "@/constants/theme";

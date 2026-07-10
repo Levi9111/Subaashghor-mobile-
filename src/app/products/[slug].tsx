@@ -7,10 +7,10 @@ import {
   Image,
   TouchableOpacity,
   ActivityIndicator,
-  useColorScheme,
   Dimensions,
   TextInput,
 } from "react-native";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useLang } from "@/lib/i18n";
 import { Colors } from "@/constants/theme";

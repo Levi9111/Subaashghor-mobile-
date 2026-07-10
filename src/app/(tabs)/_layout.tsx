@@ -1,5 +1,6 @@
 import { Tabs, useRouter, usePathname } from "expo-router";
-import { useColorScheme, View } from "react-native";
+import {  View } from "react-native";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors } from "@/constants/theme";
 import { Home, ShoppingBag, Sparkles, ShoppingCart, User } from "lucide-react-native";

@@ -7,11 +7,11 @@ import {
   TextInput,
   ScrollView,
   Dimensions,
-  useColorScheme,
   ActivityIndicator,
   FlatList,
   Image,
 } from "react-native";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useLang } from "@/lib/i18n";
 import { Colors } from "@/constants/theme";
 import { productsApi, Product } from "@/lib/api";

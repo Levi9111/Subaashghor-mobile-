@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, useColorScheme, Dimensions, Animated } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Animated } from "react-native";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useLang } from "@/lib/i18n";
