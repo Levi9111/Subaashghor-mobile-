@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export interface CartItem {
+  productId?: string;
   slug: string;
   name: string;
   image: string;

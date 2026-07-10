@@ -86,6 +86,7 @@ export default function ProductDetailScreen() {
 
   const handleAddToCart = () => {
     cart.add({
+      productId: product._id,
       slug: product.slug,
       name: lang === "bn" ? product.name.bn : product.name.en,
       image: product.images[0],
@@ -211,15 +212,21 @@ export default function ProductDetailScreen() {
 
           <View style={styles.noteRow}>
             <Text style={[styles.noteLabel, { color: colors.primary }]}>{t("টপ নোট (Top):", "Top:")}</Text>
-            <Text style={[styles.noteValue, { color: colors.textSecondary }]}>{product.notes.top.join(", ")}</Text>
+            <Text style={[styles.noteValue, { color: colors.textSecondary }]}>
+              {product.notes.top.map((n: any) => typeof n === "string" ? n : n.name).join(", ")}
+            </Text>
           </View>
           <View style={styles.noteRow}>
             <Text style={[styles.noteLabel, { color: colors.primary }]}>{t("হার্ট নোট (Heart):", "Heart:")}</Text>
-            <Text style={[styles.noteValue, { color: colors.textSecondary }]}>{product.notes.heart.join(", ")}</Text>
+            <Text style={[styles.noteValue, { color: colors.textSecondary }]}>
+              {product.notes.heart.map((n: any) => typeof n === "string" ? n : n.name).join(", ")}
+            </Text>
           </View>
           <View style={styles.noteRow}>
             <Text style={[styles.noteLabel, { color: colors.primary }]}>{t("বেস নোট (Base):", "Base:")}</Text>
-            <Text style={[styles.noteValue, { color: colors.textSecondary }]}>{product.notes.base.join(", ")}</Text>
+            <Text style={[styles.noteValue, { color: colors.textSecondary }]}>
+              {product.notes.base.map((n: any) => typeof n === "string" ? n : n.name).join(", ")}
+            </Text>
           </View>
         </View>
 

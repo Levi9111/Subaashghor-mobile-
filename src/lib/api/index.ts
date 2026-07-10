@@ -102,3 +102,11 @@ export const newsletterApi = {
       ? mockApi.subscribe(email)
       : request<{ email: string }>("/newsletter/subscribe", { method: "POST", body: { email } }),
 };
+
+// ----- Settings -----
+export const settingsApi = {
+  get: () =>
+    USE_MOCKS
+      ? Promise.resolve({ whatsapp: "+880 1724 104606" })
+      : request<any>("/settings"),
+};

@@ -97,7 +97,7 @@ export default function CheckoutScreen() {
     setLoading(true);
     try {
       const orderItems = items.map((i) => ({
-        productId: i.slug,
+        productId: i.productId || i.slug,
         slug: i.slug,
         name: i.name,
         image: i.image,

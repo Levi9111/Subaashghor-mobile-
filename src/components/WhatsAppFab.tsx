@@ -1,15 +1,29 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { TouchableOpacity, StyleSheet, Linking, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { settingsApi } from "@/lib/api";
 
 export function WhatsAppFab() {
   const insets = useSafeAreaInsets();
+  const [whatsappNum, setWhatsappNum] = useState("8801724104606");
+
+  useEffect(() => {
+    settingsApi.get()
+      .then((settings) => {
+        if (settings?.whatsapp) {
+          const digits = settings.whatsapp.replace(/\D/g, "");
+          if (digits) {
+            setWhatsappNum(digits);
+          }
+        }
+      })
+      .catch((err) => console.log("Failed to load settings in WhatsApp FAB:", err));
+  }, []);
 
   const handlePress = () => {
-    const phoneNumber = "8801711000000";
     const text = "Hello Subaashghor! I have a question.";
-    const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(text)}`;
+    const url = `https://wa.me/${whatsappNum}?text=${encodeURIComponent(text)}`;
     Linking.openURL(url).catch((err) => console.error("Failed to open WhatsApp:", err));
   };
 
