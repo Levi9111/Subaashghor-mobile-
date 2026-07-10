@@ -1,10 +1,13 @@
 import { ApiEnvelope, ApiError, ApiErrorBody } from "./types";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import Constants from "expo-constants";
 
-// Toggle mocks or live backend API. Default to mock mode just like the web client for instant preview.
-export const USE_MOCKS = true;
+// Toggle mocks or live backend API. Set to false to use the live Express server.
+export const USE_MOCKS = false;
 
-const BASE_URL = "http://localhost:5000/api/v1"; // Update to your API IP/URL in production
+const hostUri = Constants.expoConfig?.hostUri;
+const host = hostUri ? hostUri.split(":")[0] : "localhost";
+const BASE_URL = `http://${host}:5000/api/v1`;
 
 type Method = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
